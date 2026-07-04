@@ -10,6 +10,7 @@
         .page-section { display: none; }
         .page-section.active-page { display: block; }
         .content-subtab-active { background-color: #e0e7ff !important; color: #3730a3 !important; border-color: #818cf8 !important; }
+        .level-btn-active { background-color: #1e3a8a !important; color: white !important; border-color: #1e3a8a !important; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col">
@@ -100,12 +101,21 @@
 
     <!-- MAIN APP CONTENT -->
     <main id="page-home" class="page-section active-page flex-1 container mx-auto px-4 py-10 max-w-6xl">
-        <div class="bg-gradient-to-r from-blue-800 to-indigo-900 text-white rounded-2xl p-8 mb-8 shadow-md"> 
+        
+        <!-- MAIN GRADIENT HEADER BANNER -->
+        <div class="bg-gradient-to-r from-blue-800 to-indigo-900 text-white rounded-2xl p-8 mb-6 shadow-md">
             <h2 id="course-title" class="text-3xl font-black mb-2 uppercase">UPTET Course</h2>
             <p id="course-desc" class="text-gray-200 mb-4">Choose "Coaching 24" best targeted batch for the most accurate preparation of your exam.</p>
             <span class="inline-block bg-blue-600/50 px-3 py-1 rounded-md text-sm font-semibold text-yellow-300 border border-blue-400">
                 ⏳ Validity: <span id="course-duration">Till Exam</span>
             </span>
+        </div>
+
+        <!-- DYNAMIC LEVEL SELECTOR BAR (ONLY VISIBLE FOR UPTET & CTET) -->
+        <div id="level-selection-box" class="bg-white border border-gray-200 rounded-xl p-3 mb-8 shadow-xs flex flex-wrap gap-2 justify-center">
+            <button onclick="switchLevelFilter('lvl1')" id="btn-lvl-lvl1" class="level-filter-btn px-5 py-2 text-xs font-black rounded-lg border border-gray-200 bg-gray-50 text-gray-700 cursor-pointer transition">Primary Stage (Level 1)</button>
+            <button onclick="switchLevelFilter('lvl2')" id="btn-lvl-lvl2" class="level-filter-btn px-5 py-2 text-xs font-black rounded-lg border border-gray-200 bg-gray-50 text-gray-700 cursor-pointer transition">Upper Primary Stage (Level 2)</button>
+            <button onclick="switchLevelFilter('both')" id="btn-lvl-both" class="level-filter-btn px-5 py-2 text-xs font-black rounded-lg border border-gray-200 bg-gray-50 text-gray-700 cursor-pointer transition">Combo Offer (Level 1 + Level 2)</button>
         </div>
 
         <div class="grid md:grid-cols-3 gap-8">
@@ -226,7 +236,7 @@
             </div>
         </div>
 
-        <!-- NEW FEES COLLECTION ANALYTICS SECTION -->
+        <!-- FEES COLLECTION ANALYTICS SECTION -->
         <div class="bg-white rounded-2xl shadow p-6 border border-gray-200 mb-8">
             <h3 class="text-xl font-black text-emerald-700 mb-4 flex items-center gap-2">💰 Live Fees Collection Analytics</h3>
             
@@ -268,7 +278,7 @@
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-gray-100 text-gray-700 text-xs font-bold uppercase border-b border-gray-200">
-                            <th class="p-3">Batch Name</th>
+                            <th class="p-3">Batch / Package Variant Name</th>
                             <th class="p-3">Students Enrolled</th>
                             <th class="p-3">Current Offer Price</th>
                             <th class="p-3">Total Earnings</th>
@@ -280,13 +290,17 @@
         </div>
 
         <div class="grid lg:grid-cols-4 gap-6">
-            <!-- FEES SETTINGS -->
+            <!-- DYNAMIC LEVEL BIASED FEES SETTINGS -->
             <div class="bg-white rounded-2xl shadow p-5 border border-gray-200 h-fit">
                 <h3 class="text-lg font-bold text-yellow-600 mb-4">💰 Fees & Test Settings</h3>
                 <div class="space-y-4">
                     <select id="fee-exam-select" class="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 text-sm">
-                        <option value="uptet">UPTET</option>
-                        <option value="ctet">CTET</option>
+                        <option value="uptet_lvl1">UPTET Level 1</option>
+                        <option value="uptet_lvl2">UPTET Level 2</option>
+                        <option value="uptet_both">UPTET Both (Combo)</option>
+                        <option value="ctet_lvl1">CTET Level 1</option>
+                        <option value="ctet_lvl2">CTET Level 2</option>
+                        <option value="ctet_both">CTET Both (Combo)</option>
                         <option value="supertet">SUPER TET</option>
                         <option value="pet">UP PET</option>
                         <option value="upp">UP POLICE (UPP)</option>
@@ -299,13 +313,15 @@
                 </div>
             </div>
 
-            <!-- UPLOAD WITH 4 NEW INTEGRATED CATEGORIES -->
+            <!-- UPLOAD WITH LEVEL INTEGRATION -->
             <div class="bg-white rounded-2xl shadow p-5 border border-gray-200 h-fit">
                 <h3 class="text-lg font-bold text-green-700 mb-4">📤 Upload Content</h3>
                 <div class="space-y-3">
                     <select id="upload-exam" class="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 text-sm">
-                        <option value="uptet">UPTET</option>
-                        <option value="ctet">CTET</option>
+                        <option value="uptet_lvl1">UPTET Level 1</option>
+                        <option value="uptet_lvl2">UPTET Level 2</option>
+                        <option value="ctet_lvl1">CTET Level 1</option>
+                        <option value="ctet_lvl2">CTET Level 2</option>
                         <option value="supertet">SUPER TET</option>
                         <option value="pet">UP PET</option>
                         <option value="upp">UP POLICE (UPP)</option>
@@ -333,20 +349,43 @@
             </div>
         </div>
 
-        <!-- STUDENTS DATABASE -->
-        <div class="grid lg:grid-cols-1 gap-6 mt-6">
-            <div class="bg-white rounded-2xl shadow p-5 border border-gray-200 flex flex-col h-fit">
+        <!-- TWO COLUMN DATABASE & SECURITY PANELS -->
+        <div class="grid lg:grid-cols-3 gap-6 mt-6">
+            <!-- STUDENTS DATABASE -->
+            <div class="bg-white rounded-2xl shadow p-5 border border-gray-200 flex flex-col h-fit lg:col-span-2">
                 <h3 class="text-lg font-bold text-indigo-900 mb-2">👥 Students List</h3>
                 <select id="admin-filter-batch" class="w-full p-2 border border-gray-300 rounded-lg text-sm bg-gray-50 mb-3">
                     <option value="all">Sabhi Students (All)</option>
-                    <option value="uptet">UPTET Batch</option>
-                    <option value="ctet">CTET Batch</option>
+                    <option value="uptet_lvl1">UPTET Level 1</option>
+                    <option value="uptet_lvl2">UPTET Level 2</option>
+                    <option value="uptet_both">UPTET Combined Combo</option>
+                    <option value="ctet_lvl1">CTET Level 1</option>
+                    <option value="ctet_lvl2">CTET Level 2</option>
+                    <option value="ctet_both">CTET Combined Combo</option>
                     <option value="supertet">SUPER TET Batch</option>
                     <option value="pet">UP PET Batch</option>
                     <option value="upp">UP POLICE (UPP) Batch</option>
                     <option value="upsi">UP SI Batch</option>
                 </select>
                 <div class="overflow-y-auto max-h-[400px] space-y-2" id="admin-student-list"></div>
+            </div>
+
+            <!-- ADMIN PASSWORD CHANGER PANEL -->
+            <div class="bg-white rounded-2xl shadow p-5 border border-gray-200 h-fit">
+                <h3 class="text-lg font-bold text-purple-700 mb-4">🔐 Change Admin Password</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">Current Password:</label>
+                        <input type="password" id="adm-change-current" class="w-full p-2.5 border border-gray-300 rounded-lg text-sm" placeholder="••••••••">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">New Secure Password:</label>
+                        <input type="password" id="adm-change-new" class="w-full p-2.5 border border-gray-300 rounded-lg text-sm font-bold text-purple-700" placeholder="Minimum 6 characters">
+                    </div>
+                    <button onclick="updateAdminSecretPassword()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 rounded-lg text-sm shadow transition">
+                        Update Password 🚀
+                    </button>
+                </div>
             </div>
         </div>
     </main>
@@ -379,21 +418,28 @@
 
         let currentUser = null;
         let currentExam = 'uptet';
-        let currentContentTab = 'pdf'; // Manage internal sub-filter inside layout
+        let currentLevelFilter = 'lvl1'; // 'lvl1', 'lvl2', or 'both'
+        let currentContentTab = 'pdf'; 
         let authMode = 'login';
         let globalAdminContentArray = [];
         let userHasCourseAccess = false; 
 
+        // LEVEL SEGREGATED STRUCTURAL MAPPINGS
         const examDetails = {
-            uptet: { title: "UPTET Course", desc: "Complete syllabus structured PDF notes & test series.", badge: "UPTET 2026", oldPrice: "₹2,999", price: "₹699", duration: "Till Exam", defaultTests: "15+" },
-            ctet: { title: "CTET Course", desc: "Target batch completely based on latest CBSE framework.", badge: "CTET July 2026", oldPrice: "₹3,499", price: "₹799", duration: "Till Exam", defaultTests: "10+" },
+            uptet_lvl1: { title: "UPTET Level 1 (Primary)", desc: "Structured Class 1-5 syllabus premium PDF notes & mock test series.", badge: "UPTET Lvl-1 2026", oldPrice: "₹1,999", price: "₹499", duration: "Till Exam", defaultTests: "15+" },
+            uptet_lvl2: { title: "UPTET Level 2 (Upper Primary)", desc: "Complete Class 6-8 comprehensive targeted batch modules.", badge: "UPTET Lvl-2 2026", oldPrice: "₹1,999", price: "₹499", duration: "Till Exam", defaultTests: "15+" },
+            uptet_both: { title: "UPTET Combo Batch (Level 1 + 2)", desc: "Ultimate choice pack to clear primary & upper primary certificates in single shot.", badge: "UPTET Combo 2026", oldPrice: "₹2,999", price: "₹799", duration: "Till Exam", defaultTests: "30+" },
+            
+            ctet_lvl1: { title: "CTET Level 1 (Primary)", desc: "Target batch based strictly on CBSE Primary structural guidelines.", badge: "CTET Lvl-1 2026", oldPrice: "₹1,999", price: "₹499", duration: "Till Exam", defaultTests: "10+" },
+            ctet_lvl2: { title: "CTET Level 2 (Upper Primary)", desc: "Advanced subject-wise upper primary dynamic test series & notes.", badge: "CTET Lvl-2 2026", oldPrice: "₹1,999", price: "₹499", duration: "Till Exam", defaultTests: "10+" },
+            ctet_both: { title: "CTET Combo Batch (Level 1 + 2)", desc: "Complete dual solution framework package for comprehensive CTET strategy.", badge: "CTET Combo 2026", oldPrice: "₹3,499", price: "₹799", duration: "Till Exam", defaultTests: "20+" },
+            
             supertet: { title: "SUPER TET Course", desc: "Comprehensive selection batch PDFs & premium tests.", badge: "SUPER TET 2026", oldPrice: "₹4,999", price: "₹1,299", duration: "Till Exam", defaultTests: "25+" },
             pet: { title: "UPSSSC PET Course", desc: "Special targeted crash course content.", badge: "UP PET 2026", oldPrice: "₹1,999", price: "₹499", duration: "Till Exam", defaultTests: "10+" },
             upp: { title: "UP Police Constable Course", desc: "UP Police Constable exam special series.", badge: "UPP 2026", oldPrice: "₹1,999", price: "₹499", duration: "Till Exam", defaultTests: "20+" },
             upsi: { title: "UP SI Course", desc: "UP Sub Inspector special premium notes.", badge: "UP SI 2026", oldPrice: "₹2,499", price: "₹599", duration: "Till Exam", defaultTests: "15+" }
         };
 
-        // --- AUTH CONTROL INTERNALS ---
         window.closeAuthModal = function() {
             document.getElementById('auth-gate-modal').classList.add('hidden');
         };
@@ -501,21 +547,14 @@
                                 if(p.email === loginOrEmailInput || p.mobile === loginOrEmailInput) {
                                     targetEmail = p.email;
                                     if(p.mobile === loginOrEmailInput) foundMobile = true;
-                                    if(p.blocked === true) {
-                                        isBlocked = true;
-                                    }
+                                    if(p.blocked === true) isBlocked = true;
                                 }
                             }
                         });
                     }
 
-                    if(isMobileInput && !foundMobile) {
-                        return alert("❌ This Mobile Number is not registered!");
-                    }
-
-                    if(isBlocked) {
-                        return alert("❌ Your account has been blocked by Admin!");
-                    }
+                    if(isMobileInput && !foundMobile) return alert("❌ This Mobile Number is not registered!");
+                    if(isBlocked) return alert("❌ Your account has been blocked by Admin!");
 
                     signInWithEmailAndPassword(auth, targetEmail, password)
                         .then(() => {
@@ -534,38 +573,63 @@
         };
 
         window.scrollToPurchaseForm = function() {
-            alert("⚠️ Please buy the course to unlock this premium content!");
+            alert("⚠️ Please buy this specific level batch to unlock its premium materials!");
             const targetElement = document.getElementById('batch-card-element');
-            if(targetElement) {
-                targetElement.scrollIntoView({ behavior: 'smooth' });
-            }
+            if(targetElement) targetElement.scrollIntoView({ behavior: 'smooth' });
         };
 
-        // --- SWITCH CONTENT SUB-CATEGORIES ---
         window.switchContentTab = function(typeKey) {
             currentContentTab = typeKey;
             document.querySelectorAll('.content-subtab').forEach(btn => btn.classList.remove('content-subtab-active'));
             const activeSub = document.getElementById(`subtab-${typeKey}`);
             if(activeSub) activeSub.classList.add('content-subtab-active');
             
-            loadMaterials(currentExam, userHasCourseAccess);
+            // Current resolving operational key
+            let operationalExamKey = (currentExam === 'uptet' || currentExam === 'ctet') ? `${currentExam}_${currentLevelFilter}` : currentExam;
+            loadMaterials(operationalExamKey, userHasCourseAccess);
         };
 
-        // --- SYSTEM CORE SWITCH & ENGINE ---
+        // NEW FILTER LEVEL MODIFIER CONTROL
+        window.switchLevelFilter = function(levelKey) {
+            currentLevelFilter = levelKey;
+            document.querySelectorAll('.level-filter-btn').forEach(btn => btn.classList.remove('level-level-btn-active', 'bg-blue-900', 'text-white'));
+            
+            const targetBtn = document.getElementById(`btn-lvl-${levelKey}`);
+            if(targetBtn) {
+                targetBtn.classList.add('bg-blue-900', 'text-white');
+            }
+            
+            syncUIStateForActiveSelection();
+        };
+
         window.switchExam = function(examKey) {
             currentExam = examKey;
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('tab-active'));
             const activeTab = document.getElementById(`tab-${examKey}`);
             if(activeTab) activeTab.classList.add('tab-active');
 
-            const info = examDetails[examKey];
+            // Toggle filter visibility state
+            if(examKey === 'uptet' || examKey === 'ctet') {
+                document.getElementById('level-selection-box').classList.remove('hidden');
+                switchLevelFilter('lvl1');
+            } else {
+                document.getElementById('level-selection-box').classList.add('hidden');
+                syncUIStateForActiveSelection();
+            }
+        };
+
+        // UI & DB SYNCHRONIZATION FOR ALL COMBINATIONS
+        function syncUIStateForActiveSelection() {
+            let operationalExamKey = (currentExam === 'uptet' || currentExam === 'ctet') ? `${currentExam}_${currentLevelFilter}` : currentExam;
+            const info = examDetails[operationalExamKey];
+            
             document.getElementById('course-title').innerText = info.title;
             document.getElementById('course-desc').innerText = info.desc;
             document.getElementById('course-duration').innerText = info.duration;
             document.getElementById('batch-badge').innerText = info.badge;
             document.getElementById('batch-title').innerText = "Target " + info.title;
 
-            get(child(ref(db), `fees/${examKey}`)).then((snapshot) => {
+            get(child(ref(db), `fees/${operationalExamKey}`)).then((snapshot) => {
                 let displayOldPrice = info.oldPrice;
                 let displayPrice = info.price;
                 let displayTests = info.defaultTests;
@@ -581,66 +645,76 @@
                 document.getElementById('batch-price').innerText = displayPrice;
                 
                 document.getElementById('batch-features-list').innerHTML = `
-                    <li class="flex items-center gap-2 text-gray-800">📂 <span>Complete Subject-wise Premium PDF Notes Included</span></li>
-                    <li class="flex items-center gap-2 text-gray-800">📝 <span>High-Quality Online Tests for Continuous Assessment</span></li>
-                    <li class="flex items-center gap-2 text-gray-800">🏆 <span class="text-blue-700 font-bold">Total ${displayTests} Full Length Mock Tests (Latest Pattern)</span></li>
+                    <li class="flex items-center gap-2 text-gray-800">📂 <span>Complete Target Subject-wise Premium PDF Notes</span></li>
+                    <li class="flex items-center gap-2 text-gray-800">📝 <span>High-Quality Practice Tests for Assessment</span></li>
+                    <li class="flex items-center gap-2 text-gray-800">🏆 <span class="text-blue-700 font-bold">Total ${displayTests} Mock Tests (Latest Exam Pattern)</span></li>
                 `;
                 
-                // Set initial subtab to active view
-                switchContentTab('pdf');
                 checkUserCourseAccess(currentUser ? currentUser.uid : null);
             });
-        };
+        }
 
-        // --- FILTERED 4 PART RENDER WITH OPEN FOR ALL LOGIC ---
-        function loadMaterials(examKey, isPurchased) {
-            get(child(ref(db), `content/${examKey}`)).then((snapshot) => {
+        // LOAD LEVEL INTELLIGENT MATERIALS
+        function loadMaterials(operationalExamKey, isPurchased) {
+            // Combo framework resolution: If 'both' combo is purchased, grant clear access to sub-levels
+            if(!isPurchased && currentUser && (operationalExamKey.includes('_lvl1') || operationalExamKey.includes('_lvl2'))) {
+                let parentComboKey = operationalExamKey.split('_')[0] + '_both';
+                get(child(ref(db), `users/${currentUser.uid}/courses/${parentComboKey}`)).then((comboSnap) => {
+                    if(comboSnap.exists() && (comboSnap.val() === true || comboSnap.val().status === true)) {
+                        executeMaterialsFetch(operationalExamKey, true);
+                    } else {
+                        executeMaterialsFetch(operationalExamKey, false);
+                    }
+                });
+            } else {
+                executeMaterialsFetch(operationalExamKey, isPurchased);
+            }
+        }
+
+        function executeMaterialsFetch(operationalExamKey, isUnlocked) {
+            // Combo view structural handling
+            let queryKey = operationalExamKey;
+            if(operationalExamKey.includes('_both')) {
+                // Combo tabs will explicitly list free samples or render guidelines
+                queryKey = operationalExamKey.split('_')[0] + '_lvl1'; 
+            }
+
+            get(child(ref(db), `content/${queryKey}`)).then((snapshot) => {
                 let contentHTML = '';
                 let matchingItems = [];
 
                 if (snapshot.exists()) {
                     snapshot.forEach((childSnapshot) => {
                         let item = childSnapshot.val();
-                        // Support both raw format and code strings cleanly
                         if(item.type === currentContentTab || 
                            (currentContentTab === 'pdf' && item.type.includes('PDF')) ||
                            (currentContentTab === 'mock' && item.type.includes('Mock')) ||
                            (currentContentTab === 'sectional' && item.type.includes('Sectional')) ||
                            (currentContentTab === 'topic' && item.type.includes('Topic'))) {
-                            matchingItems.push({
-                                title: item.title,
-                                link: item.link,
-                                typeLabel: item.type
-                            });
+                            matchingItems.push({ title: item.title, link: item.link });
                         }
                     });
                 }
 
                 if (matchingItems.length > 0) {
                     matchingItems.forEach((item, index) => {
-                        // Crucial condition: First element (index == 0) is ALWAYS unlocked for all
-                        if (index === 0 || isPurchased) {
+                        if (index === 0 || isUnlocked) {
                             let labelBadge = index === 0 ? '<span class="text-[10px] bg-green-500 text-white font-black px-1.5 py-0.5 rounded ml-1 animate-pulse">Free Demo</span>' : '';
                             contentHTML += `
                                 <div class="p-3 bg-indigo-50 border border-indigo-100 rounded-lg flex justify-between items-center shadow-xs">
-                                    <div class="pr-2 max-w-[70%]">
-                                        <p class="font-bold text-xs text-indigo-950 truncate">${item.title} ${labelBadge}</p>
-                                    </div>
+                                    <div class="pr-2 max-w-[75%]"><p class="font-bold text-xs text-indigo-950 truncate">${item.title} ${labelBadge}</p></div>
                                     <a href="${item.link}" target="_blank" class="text-[11px] bg-blue-600 text-white px-3 py-1 rounded font-bold hover:bg-blue-700 shrink-0 shadow-xs">Open Link</a>
-                                </div>
-                            `;
+                                </div>`;
                         } else {
                             contentHTML += `
                                 <div onclick="scrollToPurchaseForm()" class="p-3 bg-gray-100/90 hover:bg-gray-200/60 border border-gray-200 rounded-lg flex justify-between items-center cursor-pointer transition">
                                     <p class="font-bold text-xs text-gray-400 truncate">🔒 Locked: ${item.title}</p>
                                     <span class="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded font-black shrink-0">Unlock 🔑</span>
-                                </div>
-                            `;
+                                </div>`;
                         }
                     });
                 } else {
-                    let niceName = currentContentTab === 'pdf' ? 'PDF Notes' : currentContentTab === 'mock' ? 'Mock Tests' : currentContentTab === 'sectional' ? 'Sectional Tests' : 'Topic Tests';
-                    contentHTML = `<p class="text-xs text-gray-400 text-center py-10">No ${niceName} uploaded yet.</p>`;
+                    contentHTML = `<p class="text-xs text-gray-400 text-center py-10">No materials uploaded for this section yet.</p>`;
                 }
                 document.getElementById('material-list').innerHTML = contentHTML;
             });
@@ -648,7 +722,7 @@
 
         window.startPayment = function() {
             if(!currentUser) {
-                alert("⚠️ Please Login / Register first to join the batch!");
+                alert("⚠️ Please Login / Register first to join this targeted batch!");
                 openAuthModal();
                 return;
             }
@@ -656,7 +730,10 @@
             let name = document.getElementById('student-name').value.trim();
             if(!name) return alert("Please fill in the student's full name field!");
 
-            let confirmPay = confirm(`Do you want to join this batch with this account (${currentUser.email})?`);
+            let operationalExamKey = (currentExam === 'uptet' || currentExam === 'ctet') ? `${currentExam}_${currentLevelFilter}` : currentExam;
+            let targetDetail = examDetails[operationalExamKey];
+
+            let confirmPay = confirm(`Do you want to buy "${targetDetail.title}" for account (${currentUser.email})?`);
             if(confirmPay) {
                 get(ref(db, `users/${currentUser.uid}/profile`)).then((snap) => {
                     let existingProfile = snap.exists() ? snap.val() : {};
@@ -671,60 +748,64 @@
                     let currentRawPrice = document.getElementById('batch-price').innerText.replace('₹', '').replace(',', '').trim();
                     let numericPrice = parseInt(currentRawPrice) || 500;
                     
-                    let currentTimestamp = new Date().toISOString(); 
                     let purchaseDetails = {
                         status: true,
-                        datePurchased: currentTimestamp.split('T')[0], 
+                        datePurchased: new Date().toISOString().split('T')[0], 
                         amountPaid: numericPrice
                     };
 
-                    set(ref(db, `users/${currentUser.uid}/courses/${currentExam}`), purchaseDetails).then(() => {
-                        alert("🎉 Congratulations! Your course has been successfully registered.");
-                        checkUserCourseAccess(currentUser.uid);
+                    set(ref(db, `users/${currentUser.uid}/courses/${operationalExamKey}`), purchaseDetails).then(() => {
+                        alert(`🎉 Congratulations! ${targetDetail.title} has been successfully activated.`);
+                        syncUIStateForActiveSelection();
                     });
                 });
             }
         };
 
         function checkUserCourseAccess(uid) {
-            const info = examDetails[currentExam];
+            let operationalExamKey = (currentExam === 'uptet' || currentExam === 'ctet') ? `${currentExam}_${currentLevelFilter}` : currentExam;
+            
             if(!uid) {
                 userHasCourseAccess = false;
-                document.getElementById("purchase-form-box").classList.remove("hidden");
-                document.getElementById("student-email").value = "";
-                document.getElementById("course-duration").innerText = info.duration;
-                document.getElementById("action-area").innerHTML = `<button onclick="startPayment()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-md text-center cursor-pointer">Login & Activate Batch 💳</button>`;
-                
-                loadMaterials(currentExam, false);
+                setupPurchaseUI(false, operationalExamKey);
                 return;
             }
 
-            get(child(ref(db), `users/${uid}/courses/${currentExam}`)).then((snapshot) => {
+            // Dual Validation Strategy: Check either level package active OR high priority combo package active
+            get(child(ref(db), `users/${uid}/courses`)).then((snapshot) => {
                 let hasAccess = false;
                 if(snapshot.exists()) {
-                    let data = snapshot.val();
-                    if(data === true || data.status === true) {
+                    let userCourses = snapshot.val();
+                    // Direct check
+                    if(userCourses[operationalExamKey] && (userCourses[operationalExamKey] === true || userCourses[operationalExamKey].status === true)) {
                         hasAccess = true;
+                    }
+                    // Parent cross verification check for level 1 & level 2
+                    if(!hasAccess && (operationalExamKey.includes('_lvl1') || operationalExamKey.includes('_lvl2'))) {
+                        let rootPrefix = operationalExamKey.split('_')[0];
+                        if(userCourses[`${rootPrefix}_both`] && (userCourses[`${rootPrefix}_both`] === true || userCourses[`${rootPrefix}_both`].status === true)) {
+                            hasAccess = true;
+                        }
                     }
                 }
 
-                if (hasAccess) {
-                    userHasCourseAccess = true;
-                    document.getElementById("purchase-form-box").classList.add("hidden");
-                    document.getElementById("course-duration").innerText = info.duration;
-                    document.getElementById("action-area").innerHTML = `<div class="w-full bg-green-100 text-green-800 font-bold py-4 rounded-xl text-center border border-green-300">✅ Dynamic Access: Active (Content Unlocked)</div>`;
-                    
-                    loadMaterials(currentExam, true);
-                } else {
-                    userHasCourseAccess = false;
-                    document.getElementById("purchase-form-box").classList.remove("hidden");
-                    document.getElementById("student-email").value = currentUser.email;
-                    document.getElementById("course-duration").innerText = info.duration;
-                    document.getElementById("action-area").innerHTML = `<button onclick="startPayment()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-md text-center cursor-pointer">Pay & Activate Batch 💳</button>`;
-                    
-                    loadMaterials(currentExam, false);
-                }
+                userHasCourseAccess = hasAccess;
+                setupPurchaseUI(hasAccess, operationalExamKey);
             });
+        }
+
+        function setupPurchaseUI(hasAccess, operationalExamKey) {
+            const info = examDetails[operationalExamKey];
+            if(hasAccess) {
+                document.getElementById("purchase-form-box").classList.add("hidden");
+                document.getElementById("action-area").innerHTML = `<div class="w-full bg-green-100 text-green-800 font-bold py-4 rounded-xl text-center border border-green-300">✅ Dynamic Access Active: Content Unlocked</div>`;
+                switchContentTab(currentContentTab);
+            } else {
+                document.getElementById("purchase-form-box").classList.remove("hidden");
+                document.getElementById("student-email").value = currentUser ? currentUser.email : "Will be auto-filled after login";
+                document.getElementById("action-area").innerHTML = `<button onclick="startPayment()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-md text-center cursor-pointer transition">Pay & Activate Batch 💳</button>`;
+                switchContentTab(currentContentTab);
+            }
         }
 
         // --- WATCH AUTH STATES ---
@@ -736,18 +817,15 @@
                     <div class="flex items-center gap-2 bg-blue-800 px-3 py-1.5 rounded-lg border border-blue-600">
                         <span class="text-xs font-bold text-yellow-300">👤 ${user.email}</span>
                         <button onclick="studentLogout()" class="text-red-300 hover:text-red-500 text-xs font-bold ml-2 cursor-pointer">Logout</button>
-                    </div>
-                `;
-                switchExam(currentExam);
+                    </div>`;
             } else {
                 currentUser = null;
                 document.getElementById("auth-status").innerHTML = `
                     <button onclick="openAuthModal()" class="bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-bold px-4 py-1.5 rounded-lg text-xs transition shadow cursor-pointer">
                         Login / Register 🔑
-                    </button>
-                `;
-                switchExam(currentExam);
+                    </button>`;
             }
+            switchExam(currentExam);
         });
 
         window.navigateTo = function(pageId) {
@@ -757,16 +835,45 @@
             document.getElementById('exam-tabs-bar').style.display = (pageId === 'home') ? 'block' : 'none';
         };
 
-        // --- ADMIN PANEL METHODS ---
+        // --- DYNAMIC DATABASE-DRIVEN ADMIN METHODS ---
         window.showAdminLogin = function() {
-            let pass = prompt("Secret Admin Password Enter Karein:");
-            if(pass === "master2026") {
-                navigateTo('admin');
-                loadStudentsDataForAdmin();
-                loadAdminMaterialsManage();
-                loadCurrentFeesInAdmin();
-                calculateFeesAnalytics();
-            } else if(pass !== null) { alert("❌ Incorrect Admin Password!"); }
+            let passInput = prompt("Secret Admin Password Enter Karein:");
+            if (passInput === null) return; 
+
+            get(ref(db, `adminSettings/secretPass`)).then((snapshot) => {
+                let dbAdminPassword = "master2026"; 
+                if (snapshot.exists()) dbAdminPassword = snapshot.val();
+                else set(ref(db, `adminSettings/secretPass`), "master2026");
+
+                if (passInput === dbAdminPassword) {
+                    navigateTo('admin');
+                    loadStudentsDataForAdmin();
+                    loadAdminMaterialsManage();
+                    loadCurrentFeesInAdmin();
+                    calculateFeesAnalytics();
+                } else {
+                    alert("❌ Incorrect Admin Password!");
+                }
+            }).catch(err => alert("Error connecting: " + err.message));
+        };
+
+        window.updateAdminSecretPassword = function() {
+            let currentInput = document.getElementById('adm-change-current').value;
+            let newInput = document.getElementById('adm-change-new').value.trim();
+
+            if (!currentInput || !newInput) return alert("⚠️ Please fill both current and new password fields!");
+            if (newInput.length < 6) return alert("⚠️ New password must be at least 6 characters long!");
+
+            get(ref(db, `adminSettings/secretPass`)).then((snapshot) => {
+                let activePassword = snapshot.exists() ? snapshot.val() : "master2026";
+                if (currentInput !== activePassword) return alert("❌ Current Admin Password galat hai!");
+
+                set(ref(db, `adminSettings/secretPass`), newInput).then(() => {
+                    alert("🎉 Admin Secret Password successfully updated!");
+                    document.getElementById('adm-change-current').value = "";
+                    document.getElementById('adm-change-new').value = "";
+                });
+            }).catch(err => alert("Operation Error: " + err.message));
         };
 
         window.clearAnalyticsFilters = function() {
@@ -794,11 +901,13 @@
                 get(child(ref(db), 'users')),
                 get(child(ref(db), 'fees'))
             ]).then(([usersSnapshot, feesSnapshot]) => {
-                let batchRevenue = { uptet: 0, ctet: 0, supertet: 0, pet: 0, upp: 0, upsi: 0 };
-                let batchCounts = { uptet: 0, ctet: 0, supertet: 0, pet: 0, upp: 0, upsi: 0 };
+                let batchRevenue = {};
+                let batchCounts = {};
                 let currentFeeMap = {};
                 
                 Object.keys(examDetails).forEach(k => {
+                    batchRevenue[k] = 0;
+                    batchCounts[k] = 0;
                     currentFeeMap[k] = parseInt(examDetails[k].price.replace('₹','').replace(',','')) || 500;
                 });
                 
@@ -849,29 +958,26 @@
                 Object.keys(batchRevenue).forEach(key => {
                     rowsHTML += `
                         <tr class="hover:bg-gray-50/70 transition">
-                            <td class="p-3 font-bold text-gray-900 uppercase">${key} Batch</td>
+                            <td class="p-3 font-bold text-gray-900 uppercase">${key.replace('_',' ')} Pack</td>
                             <td class="p-3 text-blue-600">${batchCounts[key]} Students</td>
                             <td class="p-3 text-gray-500">₹${currentFeeMap[key]}</td>
                             <td class="p-3 text-emerald-600 font-extrabold text-sm">₹${batchRevenue[key].toLocaleString('en-IN')}</td>
-                        </tr>
-                    `;
+                        </tr>`;
                 });
                 document.getElementById('analytics-batchwise-rows').innerHTML = rowsHTML;
             });
         };
 
         window.toggleBlockStudent = function(uid, currentStatus) {
-            const nextStatus = !currentStatus;
-            update(ref(db, `users/${uid}/profile`), { blocked: nextStatus }).then(() => {
-                alert(`Account successfully ${nextStatus ? 'BLOCKED' : 'UNBLOCKED'}!`);
+            update(ref(db, `users/${uid}/profile`), { blocked: !currentStatus }).then(() => {
+                alert("Account status changed!");
                 loadStudentsDataForAdmin();
             });
         };
 
         window.deleteStudent = function(uid) {
-            if(confirm("⚠️ Kya aap sach me is student ko delete krna chahte hain?")) {
+            if(confirm("⚠️ Delete this student permanent records?")) {
                 remove(ref(db, `users/${uid}`)).then(() => {
-                    alert("Student record deleted successfully!");
                     loadStudentsDataForAdmin();
                     calculateFeesAnalytics();
                 });
@@ -900,7 +1006,7 @@
             let newPrice = document.getElementById('fee-new-price').value.trim();
             let testCount = document.getElementById('fee-test-count').value.trim();
             
-            if(!oldPrice || !newPrice || !testCount) return alert("⚠️ Sabhi fields bharna zaroori hai!");
+            if(!oldPrice || !newPrice || !testCount) return alert("⚠️ Fields are required!");
 
             set(ref(db, `fees/${selectedBatch}`), { oldPrice: oldPrice, price: newPrice, testCount: testCount })
                 .then(() => {
@@ -909,8 +1015,8 @@
                         examDetails[selectedBatch].price = newPrice;
                         examDetails[selectedBatch].defaultTests = testCount;
                     }
-                    alert(`✨ Settings Updated Successfully!`);
-                    switchExam(currentExam);
+                    alert(`✨ Settings Updated!`);
+                    syncUIStateForActiveSelection();
                     calculateFeesAnalytics();
                 });
         };
@@ -922,13 +1028,13 @@
             let link = document.getElementById('upload-link').value;
             if(!title || !link) return alert("Fields are empty!");
 
-            const contentRef = ref(db, `content/${targetExam}`);
-            set(push(contentRef), { type: type, title: title, link: link }).then(() => {
-                alert(`✅ Content uploaded successfully under type: ${type.toUpperCase()}`);
+            set(push(ref(db, `content/${targetExam}`)), { type: type, title: title, link: link }).then(() => {
+                alert(`✅ Content uploaded under key: ${targetExam}`);
                 document.getElementById('upload-title').value = '';
                 document.getElementById('upload-link').value = '';
                 loadAdminMaterialsManage();
-                if(currentExam === targetExam) loadMaterials(currentExam, userHasCourseAccess);
+                let opKey = (currentExam === 'uptet' || currentExam === 'ctet') ? `${currentExam}_${currentLevelFilter}` : currentExam;
+                if(opKey === targetExam) loadMaterials(opKey, userHasCourseAccess);
             });
         };
 
@@ -960,28 +1066,27 @@
                 return item.title.toLowerCase().includes(searchVal) || item.type.toLowerCase().includes(searchVal) || item.exam.toLowerCase().includes(searchVal);
             });
 
-            if(filteredItems.length > 0) {
-                filteredItems.forEach((item) => {
-                    manageHTML += `
-                        <div class="p-2.5 bg-gray-50 border border-gray-200 rounded-lg flex justify-between items-center text-xs gap-2">
-                            <div class="pr-1 max-w-[75%] truncate">
-                                <span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase mr-1">${item.exam}</span>
-                                <span class="font-bold text-purple-800 bg-purple-50 px-1 rounded border border-purple-200 text-[10px] uppercase">${item.type}</span>
-                                <p class="text-gray-600 truncate mt-0.5">${item.title}</p>
-                            </div>
-                            <button onclick="deleteMaterial('${item.exam}', '${item.id}')" class="bg-red-500 text-white font-bold px-3 py-1.5 rounded shrink-0 cursor-pointer shadow-xs">Delete 🗑️</button>
+            filteredItems.forEach((item) => {
+                manageHTML += `
+                    <div class="p-2.5 bg-gray-50 border border-gray-200 rounded-lg flex justify-between items-center text-xs gap-2">
+                        <div class="pr-1 max-w-[75%] truncate">
+                            <span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase mr-1">${item.exam.replace('_',' ')}</span>
+                            <span class="font-bold text-purple-800 bg-purple-50 px-1 rounded border border-purple-200 text-[10px] uppercase">${item.type}</span>
+                            <p class="text-gray-600 truncate mt-0.5">${item.title}</p>
                         </div>
-                    `;
-                });
-            } else { manageHTML = `<p class="text-xs text-gray-400 text-center py-6">No content found.</p>`; }
+                        <button onclick="deleteMaterial('${item.exam}', '${item.id}')" class="bg-red-500 text-white font-bold px-3 py-1.5 rounded shrink-0 cursor-pointer shadow-xs">Delete 🗑️</button>
+                    </div>`;
+            });
+            if(filteredItems.length === 0) manageHTML = `<p class="text-xs text-gray-400 text-center py-6">No content found.</p>`;
             document.getElementById('admin-content-manage-list').innerHTML = manageHTML;
         }
 
         window.deleteMaterial = function(batch, id) {
-            if(confirm(`⚠️ Delete this content?`)) {
+            if(confirm(`⚠️ Delete this content permanent?`)) {
                 remove(ref(db, `content/${batch}/${id}`)).then(() => {
                     loadAdminMaterialsManage();
-                    loadMaterials(currentExam, userHasCourseAccess);
+                    let opKey = (currentExam === 'uptet' || currentExam === 'ctet') ? `${currentExam}_${currentLevelFilter}` : currentExam;
+                    loadMaterials(opKey, userHasCourseAccess);
                 });
             }
         };
@@ -996,39 +1101,30 @@
                         let userData = userSnapshot.val();
                         let profile = userData.profile || { name: 'New Student', email: 'N/A', mobile: 'N/A', password: 'N/A', blocked: false };
                         let hasCourses = userData.courses || {};
-                        
-                        let isBlocked = profile.blocked || false;
-                        let studentMobile = profile.mobile || 'N/A';
-                        let studentPassword = profile.password || 'N/A';
 
                         if (selectedFilter === 'all' || hasCourses[selectedFilter]) {
                             listHTML += `
                                 <div class="p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                                     <div>
-                                        <p class="font-bold text-gray-800 text-sm">👤 ${profile.name} ${isBlocked ? '<span class="text-red-600 font-black text-xs">[BLOCKED]</span>':''}</p>
-                                        <p class="text-gray-600 mt-0.5">📧 Email: ${profile.email}</p>
-                                        <p class="text-green-700 font-bold">📞 Mobile: ${studentMobile}</p>
-                                        <p class="text-purple-700 font-mono">🔑 Password: ${studentPassword}</p>
+                                        <p class="font-bold text-gray-800 text-sm">👤 ${profile.name} ${profile.blocked ? '<span class="text-red-600 font-black">[BLOCKED]</span>':''}</p>
+                                        <p class="text-gray-600 mt-0.5">📧 Email: ${profile.email} | 📞 Mobile: ${profile.mobile}</p>
+                                        <p class="text-purple-700 font-mono">🔑 Password: ${profile.password}</p>
                                         <p class="text-blue-700 font-bold mt-1">📚 Active Batches: ${Object.keys(hasCourses).join(', ').toUpperCase() || 'NONE'}</p>
                                     </div>
                                     <div class="flex gap-2 self-end sm:self-center">
-                                        <button onclick="toggleBlockStudent('${uid}', ${isBlocked})" class="${isBlocked ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-orange-500 hover:bg-orange-600'} text-white font-bold px-2.5 py-1.5 rounded shadow-xs cursor-pointer text-[11px]">
-                                            ${isBlocked ? 'Unblock 🟢' : 'Block 🔴'}
-                                        </button>
-                                        <button onclick="deleteStudent('${uid}')" class="bg-red-600 hover:bg-red-700 text-white font-bold px-2.5 py-1.5 rounded shadow-xs cursor-pointer text-[11px]">
-                                            Delete 🗑️
-                                        </button>
+                                        <button onclick="toggleBlockStudent('${uid}', ${profile.blocked || false})" class="bg-orange-500 text-white font-bold px-2.5 py-1.5 rounded text-[11px] cursor-pointer">Block/Unblock</button>
+                                        <button onclick="deleteStudent('${uid}')" class="bg-red-600 text-white font-bold px-2.5 py-1.5 rounded text-[11px] cursor-pointer">Delete</button>
                                     </div>
-                                </div>
-                            `;
+                                </div>`;
                         }
                     });
-                } else { listHTML = '<p class="text-xs text-gray-400 text-center py-4">No data.</p>'; }
+                }
+                if(!listHTML) listHTML = '<p class="text-xs text-gray-400 text-center py-4">No student dataset matching this filter context.</p>';
                 document.getElementById('admin-student-list').innerHTML = listHTML;
             });
         };
 
-        document.getElementById('btn-update-fees').onclick = updateFeesFromAdmin;
+        document.getElementById('btn-update-fees').onclick = updateFeesFromAdmin; 
         document.getElementById('btn-save-content').onclick = saveContentFromAdmin;
         document.getElementById('fee-exam-select').onchange = loadCurrentFeesInAdmin;
         document.getElementById('admin-filter-batch').onchange = loadStudentsDataForAdmin;
