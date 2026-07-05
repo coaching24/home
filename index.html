@@ -773,7 +773,6 @@
             });
         }
 
-        // --- FIXED UPI GATEWAY METHOD BYPASS OVERWRITING ---
         window.startPayment = function() {
             if(!currentUser) {
                 alert("⚠️ Please Login / Register first to join this targeted batch!");
@@ -782,7 +781,7 @@
             }
             
             let signupName = document.getElementById('student-name').value.trim();
-            if(!signupName) return alert("Error processing profile configuration registry link mappings.");
+            if(!signupName || signupName.includes("Will be auto-filled")) return alert("Error processing profile configuration registry link mappings.");
 
             let operationalExamKey = (currentExam === 'uptet' || currentExam === 'ctet') ? `${currentExam}_${currentLevelFilter}` : currentExam;
             let targetDetail = examDetails[operationalExamKey];
@@ -815,7 +814,6 @@
                         `Kya aapne payment successfully complete kar diya hai?\nClick OK to submit your request for approval!`
                     );
                     if(verificationStatus) {
-                        // FIX: PROFILE OBJECT OVERWRITE SYSTEM COMPILED OUT. LOGS PENDING AS ENROLLED META SEPARATELY
                         let purchaseDetails = {
                             status: "pending",
                             datePurchased: new Date().toISOString().split('T')[0], 
@@ -873,6 +871,9 @@
         }
 
         function setupPurchaseUI(accessState, operationalExamKey) {
+            const nameField = document.getElementById("student-name");
+            const emailField = document.getElementById("student-email");
+
             if(accessState === "approved") {
                 document.getElementById("purchase-form-box").classList.add("hidden");
                 document.getElementById("action-area").innerHTML = `<div class="w-full bg-green-100 text-green-800 font-bold py-4 rounded-xl text-center border border-green-300">✅ Course Activated: Premium Access Unlocked</div>`;
@@ -883,17 +884,22 @@
                 switchContentTab(currentContentTab);
             } else {
                 document.getElementById("purchase-form-box").classList.remove("hidden");
-                document.getElementById("student-email").value = currentUser ? currentUser.email : "Will be auto-filled after login";
                 
-                // AUTO FILL AND INHERIT ORIGINAL SIGNUP REGISTERED NAME DIRECTLY
                 if(currentUser) {
+                    emailField.value = currentUser.email || "";
                     get(ref(db, `users/${currentUser.uid}/profile`)).then((pSnap) => {
                         if(pSnap.exists()) {
-                            document.getElementById("student-name").value = pSnap.val().name || 'Registered Aspirant';
+                            nameField.value = pSnap.val().name || 'Registered Aspirant';
+                            if(pSnap.val().email) emailField.value = pSnap.val().email;
+                        } else {
+                            nameField.value = 'Registered Aspirant';
                         }
+                    }).catch(() => {
+                        nameField.value = 'Registered Aspirant';
                     });
                 } else {
-                    document.getElementById("student-name").value = "Will be auto-filled after login";
+                    nameField.value = "Will be auto-filled after login";
+                    emailField.value = "Will be auto-filled after login";
                 }
 
                 document.getElementById("action-area").innerHTML = `<button onclick="startPayment()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-md text-center cursor-pointer transition">Pay & Activate Batch 💳</button>`;
@@ -918,7 +924,7 @@
                         Login / Register 🔑
                     </button>`;
             }
-            switchExam(currentExam);
+            syncUIStateForActiveSelection();
         });
 
         window.navigateTo = function(pageId) {
@@ -1085,15 +1091,25 @@
             });
         };
 
-        window.deleteStudent = function(uid) {
-            if(confirm("⚠️ Delete this student permanent records from database?")) {
-                update(ref(db, `users/${uid}/profile`), { blocked: true }).then(() => {
-                    remove(ref(db, `users/${uid}`)).then(() => {
-                        alert("🎉 Student ka saara record Firebase database se completely remove ho chuka hai!");
-                        loadStudentsDataForAdmin();
-                        calculateFeesAnalytics();
-                    }).catch(err => alert("❌ Database removal error: " + err.message));
-                });
+        // FEATURE 1: INDIVIDUAL SELECTIVE BATCH DELETE
+        window.deleteIndividualBatch = function(uid, courseKey) {
+            if(confirm(`⚠️ Kya aap is student ke account se sirf "${courseKey.replace('_', ' ').toUpperCase()}" batch ko delete karna chahte hain?\n\nStudent ka account aur baaki batches safe rahenge.`)) {
+                remove(ref(db, `users/${uid}/courses/${courseKey}`)).then(() => {
+                    alert("🎉 Selected batch successfully delete ho gaya!");
+                    loadStudentsDataForAdmin();
+                    calculateFeesAnalytics();
+                }).catch(err => alert("❌ Error deleting batch: " + err.message));
+            }
+        };
+
+        // FEATURE 2: COMPLETE SIGNUP ACCOUNT PERMANENT DELETE
+        window.deleteStudentPermanent = function(uid) {
+            if(confirm("🚨 WARNING: Kya aap is user ka profile account aur unke saare khareede/join kiye gaye batches ek saath permanent delete karna chahte hain?\n\nYeh action undo nahi kiya ja sakta!")) {
+                remove(ref(db, `users/${uid}`)).then(() => {
+                    alert("🎉 User account aur unke sabhi batches database se completely clear ho chuke hain!");
+                    loadStudentsDataForAdmin();
+                    calculateFeesAnalytics();
+                }).catch(err => alert("❌ Database removal error: " + err.message));
             }
         };
 
@@ -1227,7 +1243,7 @@
             loadStudentsDataForAdmin();
         };
 
-        // --- STABLE MULTI-ROW LINK REGISTRY RENDERER ---
+        // --- STABLE MULTI-ROW LINK REGISTRY RENDERER WITH FLAT & NESTED FORMAT FALLBACKS ---
         const loadStudentsDataForAdmin = function() {
             let selectedFilter = document.getElementById('admin-filter-batch').value;
             let dateFilterVal = document.getElementById('admin-user-filter-date').value;
@@ -1255,24 +1271,32 @@
                         snapshot.forEach((userSnapshot) => {
                             let uid = userSnapshot.key;
                             let userData = userSnapshot.val();
-                            let profile = userData.profile || { name: 'New Student', email: 'N/A', mobile: 'N/A', password: 'N/A', blocked: false };
+                            
+                            // DUAL PROTECTION SYSTEM FALLBACKS
+                            let profile = userData.profile || {};
+                            let finalName = profile.name || userData.name || userData.username || 'New Student';
+                            let finalEmail = profile.email || userData.email || 'N/A';
+                            let finalMobile = profile.mobile || userData.mobile || 'N/A';
+                            let finalPassword = profile.password || userData.password || 'N/A';
+                            let isBlocked = profile.blocked !== undefined ? profile.blocked : (userData.blocked || false);
+                            let regDate = profile.dateRegistered || userData.dateRegistered || 'Lifetime';
+                            
                             let hasCourses = userData.courses || {};
-                            let regDate = profile.dateRegistered || 'Lifetime';
                             let activeCoursesString = Object.keys(hasCourses).join(', ').toUpperCase() || 'NONE (Signed Up Only)';
 
                             if(dateFilterVal && regDate !== dateFilterVal) return;
 
                             listHTML += `
                                 <tr class="hover:bg-gray-50 transition">
-                                    <td class="p-3 font-bold text-gray-900">${profile.name} ${profile.blocked ? '<span class="text-red-600">[BLOCKED]</span>':''}</td>
-                                    <td class="p-3">📧 ${profile.email}<br>📞 ${profile.mobile}</td>
-                                    <td class="p-3 font-mono text-purple-700">${profile.password}</td>
+                                    <td class="p-3 font-bold text-gray-900">${finalName} ${isBlocked ? '<span class="text-red-600">[BLOCKED]</span>':''}</td>
+                                    <td class="p-3">📧 ${finalEmail}<br>📞 ${finalMobile}</td>
+                                    <td class="p-3 font-mono text-purple-700">${finalPassword}</td>
                                     <td class="p-3 font-semibold text-gray-500">${regDate}</td>
                                     <td class="p-3 text-blue-700 font-bold">${activeCoursesString}</td>
                                     <td class="p-3 no-print">
                                         <div class="flex gap-1">
-                                            <button onclick="toggleBlockStudent('${uid}', ${profile.blocked || false})" class="bg-orange-500 text-white font-bold px-2 py-1 rounded text-[10px] cursor-pointer">Block/Unblock</button>
-                                            <button onclick="deleteStudent('${uid}')" class="bg-red-600 text-white font-bold px-2 py-1 rounded text-[10px] cursor-pointer">Delete 🗑️</button>
+                                            <button onclick="toggleBlockStudent('${uid}', ${isBlocked})" class="bg-orange-500 text-white font-bold px-2 py-1 rounded text-[10px] cursor-pointer">Block/Unblock</button>
+                                            <button onclick="deleteStudentPermanent('${uid}')" class="bg-red-600 hover:bg-red-700 text-white font-black px-2 py-1 rounded text-[10px] cursor-pointer shadow">Delete User Permanent 🗑️</button>
                                         </div>
                                     </td>
                                 </tr>`;
@@ -1298,7 +1322,14 @@
                         snapshot.forEach((userSnapshot) => {
                             let uid = userSnapshot.key;
                             let userData = userSnapshot.val();
-                            let profile = userData.profile || { name: 'New Student', email: 'N/A', mobile: 'N/A', password: 'N/A', blocked: false };
+                            
+                            // DUAL PROTECTION SYSTEM FALLBACKS
+                            let profile = userData.profile || {};
+                            let finalName = profile.name || userData.name || userData.username || 'New Student';
+                            let finalEmail = profile.email || userData.email || 'N/A';
+                            let finalMobile = profile.mobile || userData.mobile || 'N/A';
+                            let isBlocked = profile.blocked !== undefined ? profile.blocked : (userData.blocked || false);
+                            
                             let hasCourses = userData.courses || {};
 
                             Object.keys(hasCourses).forEach((courseKey) => {
@@ -1330,17 +1361,16 @@
 
                                     listHTML += `
                                         <tr class="hover:bg-gray-50 transition border-l-4 ${isApproved ? 'border-l-blue-600':'border-l-red-500'}">
-                                            <!-- FIX: USERS PROFILE SIGNUP UNALTERED ORIGINAL NAME PRESERVED CONSTANTLY -->
-                                            <td class="p-3 font-bold text-gray-900">${profile.name} ${profile.blocked ? '<span class="text-red-600">[BLOCKED]</span>':''}</td>
-                                            <td class="p-3">📧 ${profile.email}<br>📞 ${profile.mobile}</td>
+                                            <td class="p-3 font-bold text-gray-900">${finalName} ${isBlocked ? '<span class="text-red-600">[BLOCKED]</span>':''}</td>
+                                            <td class="p-3">📧 ${finalEmail}<br>📞 ${finalMobile}</td>
                                             <td class="p-3 uppercase text-blue-800 font-black tracking-wide">${courseKey.replace('_',' ')} Pack</td>
                                             <td class="p-3 font-mono font-bold text-gray-700">${batchJoinDate}</td>
                                             <td class="p-3">${statusBadge}</td>
                                             <td class="p-3 no-print">
                                                 <div class="flex flex-wrap gap-1">
                                                     ${approvalButton}
-                                                    <button onclick="toggleBlockStudent('${uid}', ${profile.blocked || false})" class="bg-orange-500 text-white font-bold px-2 py-1 rounded text-[10px] cursor-pointer">Block/Unblock</button>
-                                                    <button onclick="deleteStudent('${uid}')" class="bg-red-600 text-white font-bold px-2 py-1 rounded text-[10px] cursor-pointer">Delete User</button>
+                                                    <button onclick="toggleBlockStudent('${uid}', ${isBlocked})" class="bg-orange-500 text-white font-bold px-2 py-1 rounded text-[10px] cursor-pointer">Block/Unblock</button>
+                                                    <button onclick="deleteIndividualBatch('${uid}', '${courseKey}')" class="bg-red-500 hover:bg-red-600 text-white font-semibold px-2 py-1 rounded text-[10px] cursor-pointer shadow">Delete This Batch</button>
                                                 </div>
                                             </td>
                                         </tr>`;
@@ -1473,9 +1503,9 @@
         document.getElementById('btn-save-team').onclick = saveTeamMember;
         document.getElementById('btn-cancel-team-edit').onclick = resetTeamForm;
 
-        window.clearUserDateFilter = clearUserDateFilter; 
+        window.clearUserDateFilter = clearUserDateFilter;
 
-        loadTeamData();
+        loadTeamData(); 
         switchExam('uptet');
     </script>
 </body>
