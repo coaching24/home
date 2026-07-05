@@ -144,9 +144,9 @@
                 </div>
                 
                 <div id="purchase-form-box" class="bg-gray-50 p-4 rounded-xl mb-6 border border-gray-200">
-                    <h4 class="font-bold text-gray-700 mb-2 text-sm">Enter Details To Join Batch:</h4>
+                    <h4 class="font-bold text-gray-700 mb-2 text-sm">Details For Joining Batch:</h4>
                     <div class="space-y-3">
-                        <input type="text" id="student-name" placeholder="Enter Your Full Name" class="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm">
+                        <input type="text" id="student-name" placeholder="Will be auto-filled after login" class="w-full p-2.5 bg-gray-200 border border-gray-300 rounded-lg text-sm font-semibold" disabled>
                         <input type="email" id="student-email" placeholder="Will be auto-filled after login" class="w-full p-2.5 bg-gray-200 border border-gray-300 rounded-lg text-sm font-semibold" disabled>
                     </div>
                 </div>
@@ -589,7 +589,7 @@
                             mobile: mobile,
                             password: password,
                             blocked: false,
-                            dateRegistered: new Date().toISOString().split('T')[0] // Track signup date
+                            dateRegistered: new Date().toISOString().split('T')[0]
                         });
                         alert("🎉 Registration Successful! Welcome onboard.");
                         closeAuthModal();
@@ -715,7 +715,7 @@
             if(!isPurchased && currentUser && (operationalExamKey.includes('_lvl1') || operationalExamKey.includes('_lvl2'))) {
                 let parentComboKey = operationalExamKey.split('_')[0] + '_both';
                 get(child(ref(db), `users/${currentUser.uid}/courses/${parentComboKey}`)).then((comboSnap) => {
-                    if(comboSnap.exists() && (comboSnap.val() === true || comboSnap.val().status === true)) {
+                    if(comboSnap.exists() && (comboSnap.val() === true || comboSnap.val().status === "approved" || comboSnap.val().status === true)) {
                         executeMaterialsFetch(operationalExamKey, true);
                     } else {
                         executeMaterialsFetch(operationalExamKey, false);
@@ -773,7 +773,7 @@
             });
         }
 
-        // --- MOBILE RE-DIRECTION FALLBACK BACK UPI GATEWAY SYSTEM ---
+        // --- FIXED UPI GATEWAY METHOD BYPASS OVERWRITING ---
         window.startPayment = function() {
             if(!currentUser) {
                 alert("⚠️ Please Login / Register first to join this targeted batch!");
@@ -781,8 +781,8 @@
                 return;
             }
             
-            let name = document.getElementById('student-name').value.trim();
-            if(!name) return alert("Please fill in the student's full name field!");
+            let signupName = document.getElementById('student-name').value.trim();
+            if(!signupName) return alert("Error processing profile configuration registry link mappings.");
 
             let operationalExamKey = (currentExam === 'uptet' || currentExam === 'ctet') ? `${currentExam}_${currentLevelFilter}` : currentExam;
             let targetDetail = examDetails[operationalExamKey];
@@ -790,10 +790,9 @@
             let currentRawPrice = document.getElementById('batch-price').innerText.replace('₹', '').replace(',', '').trim();
             let numericPrice = parseInt(currentRawPrice) || 500;
 
-            // PHONEPE UPI ID GATEWAY LINK GENERATOR STRUCTURE CONTEXT
             let upiId = "7275555656-2@ybl"; 
             let merchantName = "Coaching 24";
-            let transactionNote = encodeURIComponent(`Payment for ${targetDetail.title} by ${name}`);
+            let transactionNote = encodeURIComponent(`Payment for ${targetDetail.title} by ${signupName}`);
             
             let upiPaymentURI = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(merchantName)}&tn=${transactionNote}&am=${numericPrice}&cu=INR`;
 
@@ -813,30 +812,19 @@
                         `1. Kisi bhi UPI App (PhonePe, Paytm, GooglePay) mein jayein.\n` +
                         `2. Is UPI ID par payment karein: ${upiId}\n` +
                         `3. Amount enter karein: ₹${numericPrice}\n\n` +
-                        `Kya aapne payment successfully complete kar diya hai?`
+                        `Kya aapne payment successfully complete kar diya hai?\nClick OK to submit your request for approval!`
                     );
                     if(verificationStatus) {
-                        get(ref(db, `users/${currentUser.uid}/profile`)).then((snap) => {
-                            let existingProfile = snap.exists() ? snap.val() : {};
-                            set(ref(db, `users/${currentUser.uid}/profile`), {
-                                name: name,
-                                email: currentUser.email,
-                                mobile: existingProfile.mobile || 'N/A',
-                                password: existingProfile.password || '••••••',
-                                blocked: existingProfile.blocked || false,
-                                dateRegistered: existingProfile.dateRegistered || new Date().toISOString().split('T')[0]
-                            });
-                            
-                            let purchaseDetails = {
-                                status: true,
-                                datePurchased: new Date().toISOString().split('T')[0], 
-                                amountPaid: numericPrice
-                            };
+                        // FIX: PROFILE OBJECT OVERWRITE SYSTEM COMPILED OUT. LOGS PENDING AS ENROLLED META SEPARATELY
+                        let purchaseDetails = {
+                            status: "pending",
+                            datePurchased: new Date().toISOString().split('T')[0], 
+                            amountPaid: numericPrice
+                        };
 
-                            set(ref(db, `users/${currentUser.uid}/courses/${operationalExamKey}`), purchaseDetails).then(() => {
-                                alert(`🎉 Congratulations! ${targetDetail.title} has been successfully verified & activated.`);
-                                syncUIStateForActiveSelection();
-                            });
+                        set(ref(db, `users/${currentUser.uid}/courses/${operationalExamKey}`), purchaseDetails).then(() => {
+                            alert(`📩 Request Submitted!\n\nWaiting for admin approval or contact 7275555656.`);
+                            syncUIStateForActiveSelection();
                         });
                     }
                 }, 4000);
@@ -848,39 +836,66 @@
             
             if(!uid) {
                 userHasCourseAccess = false;
-                setupPurchaseUI(false, operationalExamKey);
+                setupPurchaseUI("none", operationalExamKey);
                 return;
             }
 
             get(child(ref(db), `users/${uid}/courses`)).then((snapshot) => {
-                let hasAccess = false;
+                let accessState = "none"; 
                 if(snapshot.exists()) {
                     let userCourses = snapshot.val();
-                    if(userCourses[operationalExamKey] && (userCourses[operationalExamKey] === true || userCourses[operationalExamKey].status === true)) {
-                        hasAccess = true;
+                    
+                    if(userCourses[operationalExamKey]) {
+                        let targetObj = userCourses[operationalExamKey];
+                        if(targetObj === true || targetObj.status === "approved" || targetObj.status === true) {
+                            accessState = "approved";
+                        } else if(targetObj.status === "pending") {
+                            accessState = "pending";
+                        }
                     }
-                    if(!hasAccess && (operationalExamKey.includes('_lvl1') || operationalExamKey.includes('_lvl2'))) {
+                    
+                    if(accessState !== "approved" && (operationalExamKey.includes('_lvl1') || operationalExamKey.includes('_lvl2'))) {
                         let rootPrefix = operationalExamKey.split('_')[0];
-                        if(userCourses[`${rootPrefix}_both`] && (userCourses[`${rootPrefix}_both`] === true || userCourses[`${rootPrefix}_both`].status === true)) {
-                            hasAccess = true;
+                        if(userCourses[`${rootPrefix}_both`]) {
+                            let comboObj = userCourses[`${rootPrefix}_both`];
+                            if(comboObj === true || comboObj.status === "approved" || comboObj.status === true) {
+                                accessState = "approved";
+                            } else if(comboObj.status === "pending") {
+                                accessState = "pending";
+                            }
                         }
                     }
                 }
 
-                userHasCourseAccess = hasAccess;
-                setupPurchaseUI(hasAccess, operationalExamKey);
+                userHasCourseAccess = (accessState === "approved");
+                setupPurchaseUI(accessState, operationalExamKey);
             });
         }
 
-        function setupPurchaseUI(hasAccess, operationalExamKey) {
-            const info = examDetails[operationalExamKey];
-            if(hasAccess) {
+        function setupPurchaseUI(accessState, operationalExamKey) {
+            if(accessState === "approved") {
                 document.getElementById("purchase-form-box").classList.add("hidden");
-                document.getElementById("action-area").innerHTML = `<div class="w-full bg-green-100 text-green-800 font-bold py-4 rounded-xl text-center border border-green-300">✅ Dynamic Access Active: Content Unlocked</div>`;
+                document.getElementById("action-area").innerHTML = `<div class="w-full bg-green-100 text-green-800 font-bold py-4 rounded-xl text-center border border-green-300">✅ Course Activated: Premium Access Unlocked</div>`;
+                switchContentTab(currentContentTab);
+            } else if(accessState === "pending") {
+                document.getElementById("purchase-form-box").classList.add("hidden");
+                document.getElementById("action-area").innerHTML = `<div class="w-full bg-red-100 text-red-700 font-bold py-4 rounded-xl text-center border border-red-300 animate-pulse">🚨 Waiting for admin approval or contact 7275555656</div>`;
                 switchContentTab(currentContentTab);
             } else {
                 document.getElementById("purchase-form-box").classList.remove("hidden");
                 document.getElementById("student-email").value = currentUser ? currentUser.email : "Will be auto-filled after login";
+                
+                // AUTO FILL AND INHERIT ORIGINAL SIGNUP REGISTERED NAME DIRECTLY
+                if(currentUser) {
+                    get(ref(db, `users/${currentUser.uid}/profile`)).then((pSnap) => {
+                        if(pSnap.exists()) {
+                            document.getElementById("student-name").value = pSnap.val().name || 'Registered Aspirant';
+                        }
+                    });
+                } else {
+                    document.getElementById("student-name").value = "Will be auto-filled after login";
+                }
+
                 document.getElementById("action-area").innerHTML = `<button onclick="startPayment()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-md text-center cursor-pointer transition">Pay & Activate Batch 💳</button>`;
                 switchContentTab(currentContentTab);
             }
@@ -913,7 +928,6 @@
             document.getElementById('exam-tabs-bar').style.display = (pageId === 'home') ? 'block' : 'none';
         };
 
-        // UNIVERSAL ADMIN TARGET PRINT METHOD
         window.printDashboardSection = function(sectionId) {
             const element = document.getElementById(sectionId);
             if(!element) return;
@@ -922,7 +936,7 @@
             element.classList.remove('print-area');
         };
 
-        // --- DYNAMIC DATABASE-DRIVEN ADMIN METHODS ---
+        // --- ADMIN METHODS ---
         window.showAdminLogin = function() {
             let passInput = prompt("Secret Admin Password Enter Karein:");
             if (passInput === null) return; 
@@ -1017,23 +1031,21 @@
                         Object.keys(courses).forEach(batchKey => {
                             if(batchRevenue.hasOwnProperty(batchKey)) {
                                 let courseObj = courses[batchKey];
-                                let purchaseDate = null;
-                                let assignedPrice = currentFeeMap[batchKey];
-
-                                if(courseObj && typeof courseObj === 'object') {
-                                    purchaseDate = courseObj.datePurchased || null;
+                                if(courseObj && (courseObj.status === "approved" || courseObj === true || courseObj.status === true)) {
+                                    let purchaseDate = courseObj.datePurchased || null;
+                                    let assignedPrice = currentFeeMap[batchKey];
                                     if(courseObj.amountPaid) assignedPrice = parseInt(courseObj.amountPaid);
-                                }
 
-                                let passFilter = false;
-                                if(filterMode === "lifetime") passFilter = true;
-                                else if(filterMode === "single" && purchaseDate === singleDateInput) passFilter = true;
-                                else if(filterMode === "range" && purchaseDate >= startDateInput && purchaseDate <= endDateInput) passFilter = true;
+                                    let passFilter = false;
+                                    if(filterMode === "lifetime") passFilter = true;
+                                    else if(filterMode === "single" && purchaseDate === singleDateInput) passFilter = true;
+                                    else if(filterMode === "range" && purchaseDate >= startDateInput && purchaseDate <= endDateInput) passFilter = true;
 
-                                if(passFilter) {
-                                    batchRevenue[batchKey] += assignedPrice;
-                                    batchCounts[batchKey] += 1;
-                                    totalCombinedCollection += assignedPrice;
+                                    if(passFilter) {
+                                        batchRevenue[batchKey] += assignedPrice;
+                                        batchCounts[batchKey] += 1;
+                                        totalCombinedCollection += assignedPrice;
+                                    }
                                 }
                             }
                         });
@@ -1054,6 +1066,16 @@
                 });
                 document.getElementById('analytics-batchwise-rows').innerHTML = rowsHTML;
             });
+        };
+
+        window.approveCoursePayment = function(uid, courseKey) {
+            if(confirm("Verify Context: Kya aapne PhonePe par payment verify kar liya hai aur is course ko approve karna chahte hain?")) {
+                update(ref(db, `users/${uid}/courses/${courseKey}`), { status: "approved" }).then(() => {
+                    alert("🎉 Course successfully approved & activated for student!");
+                    loadStudentsDataForAdmin();
+                    calculateFeesAnalytics();
+                });
+            }
         };
 
         window.toggleBlockStudent = function(uid, currentStatus) {
@@ -1182,7 +1204,6 @@
             }
         };
 
-        // --- SUB-VIEW CONTROLLER REGISTRY LINK MAPPING ---
         window.switchAdminUserView = function(viewType) {
             adminUserActiveView = viewType;
             const btnBatch = document.getElementById('btn-view-batch');
@@ -1206,17 +1227,16 @@
             loadStudentsDataForAdmin();
         };
 
-        // --- MULTI-ROW COLUMN MATRIX TABLE LOAD CONTROLLER ---
+        // --- STABLE MULTI-ROW LINK REGISTRY RENDERER ---
         const loadStudentsDataForAdmin = function() {
             let selectedFilter = document.getElementById('admin-filter-batch').value;
-            let dateFilterVal = document.getElementById('admin-user-filter-date').value; // Get target filter date
+            let dateFilterVal = document.getElementById('admin-user-filter-date').value;
 
             get(child(ref(db), 'users')).then((snapshot) => {
                 let listHTML = '';
                 if(snapshot.exists()) {
                     
                     if(adminUserActiveView === 'all_signups') {
-                        // --- All Registered Signups Layout View ---
                         listHTML += `
                         <div class="overflow-x-auto border border-gray-200 rounded-xl bg-white">
                             <table class="w-full text-left border-collapse text-xs">
@@ -1240,7 +1260,6 @@
                             let regDate = profile.dateRegistered || 'Lifetime';
                             let activeCoursesString = Object.keys(hasCourses).join(', ').toUpperCase() || 'NONE (Signed Up Only)';
 
-                            // Date filtering trigger logic context for signups
                             if(dateFilterVal && regDate !== dateFilterVal) return;
 
                             listHTML += `
@@ -1261,7 +1280,6 @@
                         listHTML += `</tbody></table></div>`;
 
                     } else if(adminUserActiveView === 'batch_joined') {
-                        // --- Batch Joined Tabular Frame Layout View ---
                         listHTML += `
                         <div class="overflow-x-auto border border-gray-200 rounded-xl bg-white">
                             <table class="w-full text-left border-collapse text-xs">
@@ -1271,6 +1289,7 @@
                                         <th class="p-3">Email / Mobile</th>
                                         <th class="p-3">Join Batch</th>
                                         <th class="p-3">Date of Join Batch</th>
+                                        <th class="p-3">Status</th>
                                         <th class="p-3 no-print">Actions</th>
                                     </tr>
                                 </thead>
@@ -1285,6 +1304,9 @@
                             Object.keys(hasCourses).forEach((courseKey) => {
                                 let courseObj = hasCourses[courseKey];
                                 let batchJoinDate = (courseObj && courseObj.datePurchased) ? courseObj.datePurchased : 'Lifetime';
+                                
+                                let statusRaw = (courseObj && courseObj.status) ? courseObj.status : true;
+                                let isApproved = (statusRaw === "approved" || statusRaw === true);
 
                                 let matchFilter = false;
                                 if(selectedFilter === 'all') {
@@ -1293,20 +1315,30 @@
                                     matchFilter = true;
                                 }
 
-                                // Apply live dynamic date filters constraints matching input
                                 if(dateFilterVal && batchJoinDate !== dateFilterVal) {
                                     matchFilter = false;
                                 }
 
                                 if(matchFilter) {
+                                    let statusBadge = isApproved 
+                                        ? `<span class="bg-green-100 text-green-800 font-bold px-2 py-0.5 rounded text-[10px] uppercase">Active</span>`
+                                        : `<span class="bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded text-[10px] uppercase animate-pulse">Pending Approval</span>`;
+
+                                    let approvalButton = !isApproved 
+                                        ? `<button onclick="approveCoursePayment('${uid}', '${courseKey}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-2 py-1 rounded text-[10px] cursor-pointer shadow-xs">Approve Batch ✅</button>`
+                                        : ``;
+
                                     listHTML += `
-                                        <tr class="hover:bg-gray-50 transition border-l-4 border-l-blue-600">
+                                        <tr class="hover:bg-gray-50 transition border-l-4 ${isApproved ? 'border-l-blue-600':'border-l-red-500'}">
+                                            <!-- FIX: USERS PROFILE SIGNUP UNALTERED ORIGINAL NAME PRESERVED CONSTANTLY -->
                                             <td class="p-3 font-bold text-gray-900">${profile.name} ${profile.blocked ? '<span class="text-red-600">[BLOCKED]</span>':''}</td>
                                             <td class="p-3">📧 ${profile.email}<br>📞 ${profile.mobile}</td>
                                             <td class="p-3 uppercase text-blue-800 font-black tracking-wide">${courseKey.replace('_',' ')} Pack</td>
-                                            <td class="p-3 font-mono font-bold text-emerald-700 bg-emerald-50/50">${batchJoinDate}</td>
+                                            <td class="p-3 font-mono font-bold text-gray-700">${batchJoinDate}</td>
+                                            <td class="p-3">${statusBadge}</td>
                                             <td class="p-3 no-print">
-                                                <div class="flex gap-1">
+                                                <div class="flex flex-wrap gap-1">
+                                                    ${approvalButton}
                                                     <button onclick="toggleBlockStudent('${uid}', ${profile.blocked || false})" class="bg-orange-500 text-white font-bold px-2 py-1 rounded text-[10px] cursor-pointer">Block/Unblock</button>
                                                     <button onclick="deleteStudent('${uid}')" class="bg-red-600 text-white font-bold px-2 py-1 rounded text-[10px] cursor-pointer">Delete User</button>
                                                 </div>
@@ -1319,7 +1351,6 @@
                     }
                 }
                 
-                // Safety check if table rows output container turns empty context
                 if(!listHTML || listHTML.includes('<tbody></tbody>') || listHTML === '') {
                     listHTML = '<p class="text-xs text-gray-400 text-center py-8">No matching records found for this filtering context template.</p>';
                 }
@@ -1432,22 +1463,20 @@
             document.getElementById('btn-cancel-team-edit').classList.add('hidden');
         };
 
-        // Event hooks layout configuration attach
         document.getElementById('btn-update-fees').onclick = updateFeesFromAdmin;
         document.getElementById('btn-save-content').onclick = saveContentFromAdmin;
         document.getElementById('fee-exam-select').onchange = loadCurrentFeesInAdmin;
         document.getElementById('admin-filter-batch').onchange = loadStudentsDataForAdmin;
-        document.getElementById('admin-user-filter-date').onchange = loadStudentsDataForAdmin; // Live run load on date change
+        document.getElementById('admin-user-filter-date').onchange = loadStudentsDataForAdmin; 
         document.getElementById('admin-search-content').oninput = renderFilteredAdminContent;
         
         document.getElementById('btn-save-team').onclick = saveTeamMember;
         document.getElementById('btn-cancel-team-edit').onclick = resetTeamForm;
 
-        // Exposed global scope dynamic clearing mapping attachment
-        window.clearUserDateFilter = clearUserDateFilter;
+        window.clearUserDateFilter = clearUserDateFilter; 
 
         loadTeamData();
-        switchExam('uptet'); 
+        switchExam('uptet');
     </script>
 </body>
 </html>
