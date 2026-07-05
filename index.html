@@ -180,6 +180,53 @@
         </div>
     </main>
 
+    <!-- STANDALONE USER DETAILS & PROFILE UPDATE PAGE -->
+    <main id="page-profile" class="page-section flex-1 container mx-auto px-4 py-10 max-w-2xl">
+        <div class="bg-white rounded-2xl shadow-lg p-6 sm:p-8 border border-gray-100">
+            <div class="flex items-center gap-3 border-b border-gray-100 pb-4 mb-6">
+                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xl font-bold">👤</div>
+                <div>
+                    <h2 class="text-2xl font-black text-gray-900">My Account Profile</h2>
+                    <p class="text-xs text-gray-500">Apni details dekhein aur yahan se updates save karein</p>
+                </div>
+            </div>
+
+            <!-- Profile Info Grid -->
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">Email Address (Login ID):</label>
+                    <input type="text" id="profile-display-email" class="w-full p-3 bg-gray-100 border border-gray-200 rounded-xl text-sm font-semibold text-gray-500" disabled>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-blue-700 mb-1">Full Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="profile-edit-name" placeholder="Enter Full Name" class="w-full p-3 bg-white border border-gray-300 rounded-xl text-sm font-semibold focus:outline-blue-600">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-blue-700 mb-1">Mobile Number <span class="text-red-500">*</span></label>
+                        <input type="tel" id="profile-edit-mobile" placeholder="10 digit mobile number" class="w-full p-3 bg-white border border-gray-300 rounded-xl text-sm font-semibold focus:outline-blue-600">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">Account Registration Date:</label>
+                    <input type="text" id="profile-display-regdate" class="w-full p-3 bg-gray-100 border border-gray-200 rounded-xl text-sm font-mono text-gray-500" disabled>
+                </div>
+            </div>
+
+            <button onclick="saveStudentProfileData()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-xl text-sm transition shadow-md cursor-pointer mb-8">
+                Save Profile Changes 💾
+            </button>
+
+            <!-- User Enrolled Batches Block -->
+            <div class="bg-gray-50 p-5 rounded-2xl border border-gray-200">
+                <h3 class="font-black text-sm text-indigo-950 mb-3 flex items-center gap-1">📚 Enrolled & Active Batches Registry</h3>
+                <div id="profile-active-batches" class="space-y-2 text-xs font-bold">
+                    <p class="text-gray-400 italic">No course batches activated yet.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
     <!-- ABOUT US PAGE -->
     <main id="page-about" class="page-section flex-1 container mx-auto px-4 py-10 max-w-4xl">
         <div class="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
@@ -907,15 +954,75 @@
             }
         }
 
+        // --- FETCH PROFILE FOR PROFILE SECTION VIEW AND UPDATES ---
+        function loadProfileDataView() {
+            if(!currentUser) return;
+            document.getElementById('profile-display-email').value = currentUser.email || '';
+            
+            // Profile details load
+            get(ref(db, `users/${currentUser.uid}`)).then((snapshot) => {
+                if(snapshot.exists()) {
+                    let userData = snapshot.val();
+                    let profile = userData.profile || {};
+                    
+                    document.getElementById('profile-edit-name').value = profile.name || userData.name || '';
+                    document.getElementById('profile-edit-mobile').value = profile.mobile || userData.mobile || '';
+                    document.getElementById('profile-display-regdate').value = profile.dateRegistered || userData.dateRegistered || 'N/A';
+                    
+                    // Courses registry load
+                    let courses = userData.courses || {};
+                    let coursesHTML = '';
+                    let keys = Object.keys(courses);
+                    
+                    if(keys.length > 0) {
+                        keys.forEach(key => {
+                            let item = courses[key];
+                            let statusText = (item.status === 'approved' || item === true || item.status === true) ? '🟢 Active / Approved' : '⏳ Pending Admin Approval';
+                            coursesHTML += `
+                                <div class="p-3 bg-white border border-gray-200 rounded-xl flex justify-between items-center shadow-xs">
+                                    <span class="uppercase text-blue-800 tracking-wide">${key.replace('_',' ')}</span>
+                                    <span class="text-[11px] px-2 py-0.5 rounded font-bold">${statusText}</span>
+                                </div>`;
+                        });
+                    } else {
+                        coursesHTML = `<p class="text-gray-400 italic font-medium">Aapne abhi tak koi batch join nahi kiya hai.</p>`;
+                    }
+                    document.getElementById('profile-active-batches').innerHTML = coursesHTML;
+                }
+            });
+        }
+
+        window.saveStudentProfileData = function() {
+            if(!currentUser) return alert("⚠️ Account logged in nahi hai!");
+            
+            let upName = document.getElementById('profile-edit-name').value.trim();
+            let upMobile = document.getElementById('profile-edit-mobile').value.trim();
+
+            if(!upName) return alert("⚠️ Kripya apna Full Name dalein!");
+            if(!upMobile || upMobile.length < 10) return alert("⚠️ Kripya sahi 10-digit Mobile Number dalein!");
+
+            update(ref(db, `users/${currentUser.uid}/profile`), {
+                name: upName,
+                mobile: upMobile
+            }).then(() => {
+                alert("🎉 Profile metadata details successfully update ho gayi hain!");
+                loadProfileDataView();
+                syncUIStateForActiveSelection();
+            }).catch(err => alert("❌ Update Error: " + err.message));
+        };
+
         // --- WATCH AUTH STATES ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
                 closeAuthModal();
+                // IMAGE_1DBA0.PNG OPTIMIZATION: ICON AND EMAIL IS NOW CLICKABLE ROUTE LINK
                 document.getElementById("auth-status").innerHTML = `
-                    <div class="flex items-center gap-2 bg-blue-800 px-3 py-1.5 rounded-lg border border-blue-600">
-                        <span class="text-xs font-bold text-yellow-300">👤 ${user.email}</span>
-                        <button onclick="studentLogout()" class="text-red-300 hover:text-red-500 text-xs font-bold ml-2 cursor-pointer">Logout</button>
+                    <div class="flex items-center gap-2 bg-blue-800 px-3 py-1.5 rounded-lg border border-blue-600 shadow-xs">
+                        <button onclick="navigateTo('profile')" class="text-xs font-bold text-yellow-300 flex items-center gap-1 cursor-pointer hover:text-white transition" title="View & Update Profile">
+                            <span>👤</span> <span class="underline decoration-yellow-400">${user.email}</span>
+                        </button>
+                        <button onclick="studentLogout()" class="text-red-300 hover:text-red-500 text-xs font-bold ml-2 cursor-pointer transition">Logout</button>
                     </div>`;
             } else {
                 currentUser = null;
@@ -932,6 +1039,10 @@
             const target = document.getElementById(`page-${pageId}`);
             if(target) target.classList.add('active-page');
             document.getElementById('exam-tabs-bar').style.display = (pageId === 'home') ? 'block' : 'none';
+            
+            if(pageId === 'profile') {
+                loadProfileDataView();
+            }
         };
 
         window.printDashboardSection = function(sectionId) {
@@ -1091,10 +1202,9 @@
             });
         };
 
-        // FEATURE 1: INDIVIDUAL SELECTIVE BATCH DELETE
         window.deleteIndividualBatch = function(uid, courseKey) {
             if(confirm(`⚠️ Kya aap is student ke account se sirf "${courseKey.replace('_', ' ').toUpperCase()}" batch ko delete karna chahte hain?\n\nStudent ka account aur baaki batches safe rahenge.`)) {
-                remove(ref(db, `users/${uid}/courses/${courseKey}`)).then(() => {
+                remove(ref(ref(db, `users/${uid}/courses/${courseKey}`))).then(() => {
                     alert("🎉 Selected batch successfully delete ho gaya!");
                     loadStudentsDataForAdmin();
                     calculateFeesAnalytics();
@@ -1102,7 +1212,6 @@
             }
         };
 
-        // FEATURE 2: COMPLETE SIGNUP ACCOUNT PERMANENT DELETE
         window.deleteStudentPermanent = function(uid) {
             if(confirm("🚨 WARNING: Kya aap is user ka profile account aur unke saare khareede/join kiye gaye batches ek saath permanent delete karna chahte hain?\n\nYeh action undo nahi kiya ja sakta!")) {
                 remove(ref(db, `users/${uid}`)).then(() => {
@@ -1243,7 +1352,6 @@
             loadStudentsDataForAdmin();
         };
 
-        // --- STABLE MULTI-ROW LINK REGISTRY RENDERER WITH FLAT & NESTED FORMAT FALLBACKS ---
         const loadStudentsDataForAdmin = function() {
             let selectedFilter = document.getElementById('admin-filter-batch').value;
             let dateFilterVal = document.getElementById('admin-user-filter-date').value;
@@ -1272,7 +1380,6 @@
                             let uid = userSnapshot.key;
                             let userData = userSnapshot.val();
                             
-                            // DUAL PROTECTION SYSTEM FALLBACKS
                             let profile = userData.profile || {};
                             let finalName = profile.name || userData.name || userData.username || 'New Student';
                             let finalEmail = profile.email || userData.email || 'N/A';
@@ -1323,7 +1430,6 @@
                             let uid = userSnapshot.key;
                             let userData = userSnapshot.val();
                             
-                            // DUAL PROTECTION SYSTEM FALLBACKS
                             let profile = userData.profile || {};
                             let finalName = profile.name || userData.name || userData.username || 'New Student';
                             let finalEmail = profile.email || userData.email || 'N/A';
@@ -1503,9 +1609,9 @@
         document.getElementById('btn-save-team').onclick = saveTeamMember;
         document.getElementById('btn-cancel-team-edit').onclick = resetTeamForm;
 
-        window.clearUserDateFilter = clearUserDateFilter;
+        window.clearUserDateFilter = clearUserDateFilter; 
 
-        loadTeamData(); 
+        loadTeamData();
         switchExam('uptet');
     </script>
 </body>
